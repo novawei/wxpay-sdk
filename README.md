@@ -1,7 +1,7 @@
 ﻿微信支付 Java SDK
 ------
 
-**v3.0.10 **
+v3.0.10
 
 增加了
 1. `WXPayConfigInstance`继承`WXPayConfig`，用于实例化
