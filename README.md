@@ -11,6 +11,7 @@ v3.0.10
 修改了
 
 1. `WXPay`中不管是否使用沙盒环境，签名方式都采用MD5
+2. 注意参数要用TreeMap进行存储
 
 示例代码如下
 
@@ -61,10 +62,9 @@ v3.0.10
         // 单位修正为分
         String totalFee = amount.multiply(new BigDecimal(100)).setScale(0, BigDecimal.ROUND_HALF_UP).toPlainString();
 
-        Map<String, String> data = new HashMap<>();
+        Map<String, String> data = new TreeMap<>();
         data.put("body", body);
         data.put("out_trade_no", tradeNo);
-        data.put("device_info", "设备信息");
         data.put("total_fee", totalFee);
         data.put("spbill_create_ip", "替换为相应的ip地址");
         data.put("notify_url", "设置回调地址");
