@@ -11,7 +11,11 @@ v3.0.10
 修改了
 
 1. `WXPay`中不管是否使用沙盒环境，签名方式都采用MD5
-2. 注意参数要用TreeMap进行存储
+
+恶心死了微信支付，文档狗屎一样，SDK狗屎一样
+
+1、返回给APP的数据，字段需要再次签名，而且字段名跟调用服务器接口的字段不一样，参考示例代码
+
 
 示例代码如下
 
@@ -62,21 +66,47 @@ v3.0.10
         // 单位修正为分
         String totalFee = amount.multiply(new BigDecimal(100)).setScale(0, BigDecimal.ROUND_HALF_UP).toPlainString();
 
-        Map<String, String> data = new TreeMap<>();
-        data.put("body", body);
-        data.put("out_trade_no", tradeNo);
-        data.put("total_fee", totalFee);
-        data.put("spbill_create_ip", "替换为相应的ip地址");
-        data.put("notify_url", "设置回调地址");
-        data.put("trade_type", tradeType);
+        Map<String, String> order = new HashMap<>();
+        order.put("body", body);
+        order.put("out_trade_no", tradeNo);
+        order.put("total_fee", totalFee);
+        order.put("spbill_create_ip", NetworkUtil.getLocalIp());
+        order.put("notify_url", PayConst.WX_CALLBACK_URL);
+        order.put("trade_type", tradeType);
 
-        Map<String, String> orderData = null;
+        Map<String, String> result = null;
         try {
-            orderData = wxPayClient.unifiedOrder(data);
+            result = wxPayClient.unifiedOrder(order);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return orderData;
+        String prepay_id = null;
+        if (DataUtil.isNotEmpty(result) && StringUtils.isNotEmpty(result.get("prepay_id"))) {
+            prepay_id = result.get("prepay_id");
+        }
+
+        String noncestr = order.get("nonce_str");
+        String timestamp = String.valueOf(System.currentTimeMillis()/1000);
+
+        // 返回给APP的数据，需要再次签名
+        Map<String, String> data = new HashMap<>();
+        data.put("appid", PayConst.WX_APP_ID);
+        data.put("partnerid", PayConst.WX_MCH_ID);
+        data.put("prepayid", prepay_id);
+        data.put("noncestr", noncestr);
+        data.put("timestamp", timestamp);
+        data.put("package", "Sign=WXPay");
+
+        String sign = null;
+        try {
+            sign = WXPayUtil.generateSignature(data, PayConst.WX_MCH_KEY);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        data.put("sign", sign);
+
+        order = null; result = null;
+        return data;
     }
 ```
 
