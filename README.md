@@ -1,6 +1,86 @@
 ﻿微信支付 Java SDK
 ------
 
+v3.0.10
+
+增加了
+
+1. `WXPayConfigInstance`继承`WXPayConfig`，用于实例化
+2. `WXPayDomainSimpleImpl`并且在`WXPayConfigInstance`中`getWXPayDomain`方法中默认返回该类的实例
+
+修改了
+
+1. `WXPay`中不管是否使用沙盒环境，签名方式都采用MD5
+
+示例代码如下
+
+```java
+    private static WXPay getWXPayClient() {
+        WXPayConfigInstance configInstance = new WXPayConfigInstance();
+        configInstance.setAppID(PayConst.WX_APP_ID);
+        configInstance.setMchID(PayConst.WX_MCH_ID);
+        configInstance.setKey(PayConst.WX_MCH_KEY);
+
+        String certPath = Thread.currentThread().getContextClassLoader().getResource(PayConst.CERT_ROOT_PATH).getPath();
+        certPath = certPath.concat(PayConst.WX_API_CERT_FILENAME);
+
+        boolean hasCert = true;
+        try {
+            File file = new File(certPath);
+            FileInputStream fileInputStream = new FileInputStream(file);
+            byte[] byteData = new byte[(int) file.length()];
+            fileInputStream.read(byteData);
+            fileInputStream.close();
+            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteData);
+            configInstance.setCertStream(byteArrayInputStream);
+            file = null; fileInputStream = null; byteData = null; fileInputStream = null; byteArrayInputStream = null;
+        } catch (Exception e) {
+            hasCert = false;
+            e.printStackTrace();
+        }
+        // 证书获取失败
+        if (!hasCert) {
+            return null;
+        }
+
+        WXPay client = null;
+        try {
+            client = new WXPay(configInstance);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return client;
+    }
+    
+    private static Map<String, String> startWxpay(String tradeNo, BigDecimal amount, String body, String tradeType) {
+        WXPay wxPayClient = getWXPayClient();
+        if (wxPayClient == null) {
+            return null;
+        }
+
+        // 单位修正为分
+        String totalFee = amount.multiply(new BigDecimal(100)).setScale(0, BigDecimal.ROUND_HALF_UP).toPlainString();
+
+        Map<String, String> data = new HashMap<>();
+        data.put("body", body);
+        data.put("out_trade_no", tradeNo);
+        data.put("device_info", "设备信息");
+        data.put("total_fee", totalFee);
+        data.put("spbill_create_ip", "替换为相应的ip地址");
+        data.put("notify_url", "设置回调地址");
+        data.put("trade_type", tradeType);
+
+        Map<String, String> orderData = null;
+        try {
+            orderData = wxPayClient.unifiedOrder(data);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return orderData;
+    }
+```
+
+
 对[微信支付开发者文档](https://pay.weixin.qq.com/wiki/doc/api/index.html)中给出的API进行了封装。
 
 com.github.wxpay.sdk.WXPay类下提供了对应的方法：
