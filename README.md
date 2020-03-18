@@ -4,10 +4,15 @@
 v3.0.10
 
 增加了
+
 1. `WXPayConfigInstance`继承`WXPayConfig`，用于实例化
 2. `WXPayDomainSimpleImpl`并且在`WXPayConfigInstance`中`getWXPayDomain`方法中默认返回该类的实例
+
 修改了
+
 1. `WXPay`中不管是否使用沙盒环境，签名方式都采用MD5
+
+示例代码如下
 
 ```java
     private static WXPay getWXPayClient() {
